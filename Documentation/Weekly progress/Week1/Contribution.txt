@@ -1,5 +1,5 @@
 Member 1: Disha Shetty
-2hrs) 
+(2hrs) 
 Designed and refined the system architecture for the Waitlist Management application
   - Generated an initial architectural diagram using Gemini and iteratively refined it.
   - Identified core system modules such as waitlist logic, capacity tracking, notifications, and future AI prediction components.
@@ -17,11 +17,11 @@ Explored AI tools and prompt engineering techniques to improve development workf
 
 (4hrs) 
 Built additional AI-assisted prototypes for learning and experimentation
-  - Created a simple AR fruit slash game (Gemini).
-  - Developed a pet adoption interface (Claude, Figma prompt comparison).
+  - Created a simple AR fruit slash game called VisionBlade (Gemini).
+  - Developed a simple web interface with dual functionality of client vs customer (Claude, Figma prompt comparison).
   - Launched a simple HTML, css based blog using Gemini to code and Pages to deploy, to understand GitHub functionality better (NeuroFrontiers).
 
-Leader role
+Additional Leader role
 Created Github repositories and added team members as collaborators, recorded meeting minutes, sceduled team meeting and documented weekly contributions from each member.
 
 Member 2: Kyle Adams Albuquerque
@@ -72,6 +72,15 @@ Researched strategies for integrating AI into the project
 Researched prompt engineering techniques
   - Improved prompt structure for higher-quality AI outputs
   - Analyzed impact on code accuracy and usability
+Member 4: Angela Lopez
+(1.5 hours) Configured the project workspace using Figma Make to streamline the collaborative design process for the team
+(2.5 hours) Developed high-fidelity UI components for the staff-facing dashboard, focusing on table-based room setups.
+(2 hours) Designed the mobile-responsive interface for attendees to view waitlist status and manage their personal reservations.
+(1 hour) Rewrote the overarching project phases into one-week sprints to improve the distribution of tasks and ensure a steady development flow.
+(3 hours) Performed testing in Figma to simulate the logic flow for adding and removing users from the waitlist system.
+(2.5 hours) Created a digital floor plan format to visualize how waitlisted attendees are assigned to specific tables within a room.
+(2 hours) Performed user-flow testing to ensure the system correctly differentiates between users with confirmed reservations and those on the standby waitlist.
+(30 min) Defined specific deliverables for the upcoming week’s sprint to align with the revised project schedule.
 
 Important Links:
 Figma demo https://www.figma.com/make/eNVkOFDVcPecCHbg1ML89q/Waitlist-Management-App?t=InNTnlUYznH39pkA-20&fullscreen=1 
