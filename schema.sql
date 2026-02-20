@@ -53,11 +53,22 @@ CREATE TABLE organizations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE venues (
+-- Staff Users Table
+CREATE TABLE staff_users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
-    address TEXT,
+    email TEXT UNIQUE NOT NULL,
+    role staff_role NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Updated Venues Table to reference Staff Users
+CREATE TABLE venues (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    staff_user_id UUID NOT NULL REFERENCES staff_users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    address TEXT NOT NULL,
     timezone TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -145,15 +156,6 @@ CREATE TABLE session_predictions (
     generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE staff_users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    role staff_role NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 -- =====================================================
 -- INDEXES (Performance Optimization)
 -- =====================================================
@@ -185,4 +187,4 @@ CREATE INDEX idx_staff_org ON staff_users(organization_id);
 
 -- =====================================================
 -- END OF SCHEMA
--- =====================================================
+-- ======================================================

@@ -1,19 +1,17 @@
 organizations
-    └── venues
-            └── rooms
-            └── events
-                    └── event_sessions
-                            ├── waitlist_entries
-                            │       └── attendees
-                            ├── admissions
-                            │       └── attendees
-                            └── session_predictions
+    └── staff_users
+                  └── venues
+                             └── rooms
+                             └── events
+                                        └── event_sessions
+                                        ├── waitlist_entries
+                                        │             └── attendees
+                                        ├── admissions
+                                        │           └── attendees
+                                        └── session_predictions
 
 organizations
     └── attendees
-
-organizations
-    └── staff_users
 
 attendees
     └── notifications
