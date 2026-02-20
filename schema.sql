@@ -2,6 +2,12 @@
 -- Event Waitlist Management System - Full Schema
 -- =====================================================
 
+-- Create the database (if it doesn't already exist)
+CREATE DATABASE event_waitlist;
+
+-- Connect to the database
+\c event_waitlist;
+
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
