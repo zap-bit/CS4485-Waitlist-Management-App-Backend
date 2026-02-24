@@ -1,58 +1,58 @@
-**ORGANIZATIONS**
+# TABLE INFO
+**ORGANIZATIONS**<br>
 id | name | created_at
 - **Description:** Represents organizations that manage events and attendees.
 
-**STAFF_USERS**
+**STAFF_USERS**<br>
 id | organization_id | name | email | role | username | password | created_at
 - **Description:** Represents staff members who manage venues and events for organizations. Includes login credentials (username and password).
 
-**VENUES**
+**VENUES**<br>
 id | staff_user_id | name | address | timezone | created_at
 - **Description:** Represents physical locations where events are hosted.
 
-**EVENTS**
+**EVENTS**<br>
 id | venue_id | name | description | default_duration_minutes | created_at
 - **Description:** Represents events that are hosted at venues and consist of multiple tables.
 
-**TABLES**
+**TABLES**<br>
 id | event_id | name | capacity | created_at
 - **Description:** Represents tables available for seating during specific events.
 
-**EVENT_SESSIONS**
+**EVENT_SESSIONS**<br>
 id | event_id | room_id | start_time | end_time | capacity_override | status | created_at
 - **Description:** Represents individual sessions of an event, scheduled in specific rooms.
 
-**ATTENDEES**
+**ATTENDEES**<br>
 id | organization_id | first_name | last_name | phone_number | email | party_id | is_party_leader | created_at
 - **Description:** Represents individuals who attend events, optionally grouped into parties.
 
-**WAITLIST_ENTRIES**
+**WAITLIST_ENTRIES**<br>
 id | event_session_id | attendee_id | position | status | joined_at | promoted_at | responded_at | expires_at
 - **Description:** Represents attendees waiting for a spot in an event session.
 
-**ADMISSIONS**
+**ADMISSIONS**<br>
 id | event_session_id | attendee_id | check_in_time | check_out_time | source
 - **Description:** Represents records of attendees checking in and out of event sessions.
 
-**NOTIFICATIONS**
+**NOTIFICATIONS**<br>
 id | attendee_id | event_session_id | type | channel | status | sent_at | created_at
 - **Description:** Represents notifications sent to attendees about event updates.
 
-**SESSION_PREDICTIONS**
+**SESSION_PREDICTIONS**<br>
 id | event_session_id | predicted_wait_time_minutes | predicted_no_show_rate | predicted_fill_rate | model_version | generated_at
 - **Description:** Represents predictions for session metrics like wait time and attendance rates.
 
-**PARTIES**
+**PARTIES**<br>
 id | name | created_at
 - **Description:** Represents groups of attendees, such as families or teams.
 
-**TABLE_ASSIGNMENTS**
+**TABLE_ASSIGNMENTS**<br>
 id | table_id | attendee_id | party_id | created_at
 - **Description:** Represents assignments of attendees or parties to specific tables.
 
 
-RELATIONS
-
+# RELATION INFO
 1. ORGANIZATIONS ↔ STAFF_USERS (1:N)
    - **Relation:** Each organization can have multiple staff users, but each staff user belongs to one organization.
    - **Operations:**
@@ -164,3 +164,6 @@ RELATIONS
       - Fetch the prediction for a specific session.
       - Generate or update a prediction for a session.
       - Delete a session and cascade delete its prediction.
+
+# DB Diagram:
+![Alt text](DBDiagram.png)
