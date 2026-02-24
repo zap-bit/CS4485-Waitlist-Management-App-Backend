@@ -60,6 +60,8 @@ CREATE TABLE staff_users (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     role staff_role NOT NULL,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -73,14 +75,15 @@ CREATE TABLE venues (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE TABLE rooms (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    capacity INTEGER NOT NULL CHECK (capacity > 0),
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Updated EVENTS table to reference VENUES directly
+ALTER TABLE events
+DROP COLUMN venue_id,
+ADD COLUMN venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE;
+
+-- Updated TABLES table to reference EVENTS directly
+ALTER TABLE tables
+DROP COLUMN event_session_id,
+ADD COLUMN event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE;
 
 CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -110,6 +113,8 @@ CREATE TABLE attendees (
     last_name TEXT NOT NULL,
     phone_number TEXT,
     email TEXT,
+    party_id UUID REFERENCES parties(id) ON DELETE SET NULL,
+    is_party_leader BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -154,6 +159,46 @@ CREATE TABLE session_predictions (
     predicted_fill_rate NUMERIC(5,2),
     model_version TEXT,
     generated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =====================================================
+-- Add Parties Table
+-- =====================================================
+CREATE TABLE parties (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL, -- Optional name for the party (e.g., "Smith Family")
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =====================================================
+-- Add Tables Table
+-- =====================================================
+CREATE TABLE tables (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    name TEXT NOT NULL, -- Table name or number (e.g., "Table 1")
+    capacity INTEGER NOT NULL CHECK (capacity > 0), -- Max number of attendees per table
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- =====================================================
+-- Update Attendees Table
+-- =====================================================
+ALTER TABLE attendees
+ADD COLUMN party_id UUID REFERENCES parties(id) ON DELETE SET NULL, -- Associate attendee with a party
+ADD COLUMN is_party_leader BOOLEAN DEFAULT FALSE; -- Flag to indicate if the attendee is the party leader
+
+-- =====================================================
+-- Add Table Assignments Table
+-- =====================================================
+CREATE TABLE table_assignments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    table_id UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
+    attendee_id UUID REFERENCES attendees(id) ON DELETE CASCADE, -- Assign individual attendees to tables
+    party_id UUID REFERENCES parties(id) ON DELETE CASCADE, -- OR assign entire parties to tables
+    UNIQUE(table_id, attendee_id), -- Ensure no duplicate attendee assignments
+    UNIQUE(table_id, party_id), -- Ensure no duplicate party assignments
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- =====================================================
