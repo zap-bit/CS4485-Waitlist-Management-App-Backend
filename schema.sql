@@ -3,10 +3,10 @@
 -- =====================================================
 
 -- Create the database (if it doesn't already exist)
-CREATE DATABASE event_waitlist;
+-------- CREATE DATABASE event_waitlist;
 
 -- Connect to the database
-\c event_waitlist;
+-------- \c event_waitlist;
 
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -38,12 +38,12 @@ CREATE TABLE Account (
     UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    name TEXT,
+    name TEXT NOT NULL,
     businessName TEXT,
     role role_type NOT NULL,
     CHECK (
         (role = 'USER' AND businessName IS NULL) OR
-        (role = 'BUSINESS' AND name IS NULL)
+        (role = 'BUSINESS' AND businessName IS NOT NULL)
     )
 );
 
@@ -66,20 +66,20 @@ CREATE TABLE Event (
     )
 );
 
-CREATE TABLE EventTable (
-    UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    EventUUID UUID NOT NULL REFERENCES Event(UUID) ON DELETE CASCADE,
-    PartyLeaderUUID UUID REFERENCES Account(UUID),
-    PartyUUID UUID REFERENCES Party(UUID), -- Added connection to Party table
-    capacity INTEGER NOT NULL
-);
-
 CREATE TABLE Party (
     UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     PartyLeaderUUID UUID NOT NULL REFERENCES Account(UUID),
     EventUUID UUID NOT NULL REFERENCES Event(UUID) ON DELETE CASCADE,
     partySize INTEGER NOT NULL,
     specialRequests TEXT
+);
+
+CREATE TABLE EventTable (
+    UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    EventUUID UUID NOT NULL REFERENCES Event(UUID) ON DELETE CASCADE,
+    PartyLeaderUUID UUID REFERENCES Account(UUID),
+    PartyUUID UUID REFERENCES Party(UUID), -- Added connection to Party table
+    capacity INTEGER NOT NULL
 );
 
 CREATE TABLE Notifications (
