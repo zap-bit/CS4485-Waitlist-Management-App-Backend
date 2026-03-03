@@ -32,3 +32,7 @@ Swagger UI: `http://localhost:8000/docs`
 
 - Bearer token: `demo-token`
 - API key: `demo-api-key`
+
+## Backend
+npm install
+npm run dev
