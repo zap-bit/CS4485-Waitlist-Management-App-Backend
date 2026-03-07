@@ -178,12 +178,10 @@ if __name__ == "__main__":
     print("gotta put smthn here so the test file runs, will replace with actual tests later -Kyle")
 
     # Create a business account
-    create_account(email="jburger@example.com", pswd="securepassword", name="Joe Joey", role="BUSINESS", business_name="Joes Burgers")
-    time.sleep(1)  # Add delay to avoid sending requests too fast
+    # create_account(email="jburger@example.com", pswd="securepassword", name="Joe Joey", role="BUSINESS", business_name="Joes Burgers")
 
     # Create a user account
-    create_account(email="bob@gmail.com", pswd="password123", name="Bob Smith", role="USER", business_name=None)
-    time.sleep(1)  # Add delay to avoid sending requests too fast
+    # create_account(email="bob@gmail.com", pswd="password123", name="Bob Smith", role="USER", business_name=None)
 
     # Uncomment and add delays for other operations if needed
     # create_table_event(
@@ -193,7 +191,6 @@ if __name__ == "__main__":
     #     reservation_duration=60,
     #     no_show_policy="No-shows will be charged a fee."
     # )
-    # time.sleep(1)
 
     # create_capacity_event(
     #     name="Capacity Event Example",
@@ -201,13 +198,10 @@ if __name__ == "__main__":
     #     capacity=100,
     #     estimated_time_per_person=30
     # )
-    # time.sleep(1)
 
     # create_event_table(capacity=6)
-    # time.sleep(1)
 
     # create_party(
     #     party_size=5,
     #     special_requests="Vegetarian meal options requested."
     # )
-    # time.sleep(1)
