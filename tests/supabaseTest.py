@@ -1,6 +1,8 @@
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import hashlib
+import time
 
 # Load environment variables from .env file
 load_dotenv()
@@ -15,19 +17,31 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def create_user_account(email: str, pswd: str, name: str, business_name: str, role: str):
+def hash_password(password: str) -> str:
     """
-    Inserts a user account into the Supabase database.
+    Hashes a password using SHA-256.
 
-    :param email: Email of the user (non-nullable). 
+    :param password: Plain text password to hash.
+    :return: Hashed password as a hexadecimal string.
+    """
+    return hashlib.sha256(password.encode()).hexdigest()
+
+
+def create_account(email: str, pswd: str, name: str, role: str, business_name: str = None):
+    """
+    Inserts an account (USER or BUSINESS) into the Supabase database.
+
+    :param email: Email of the user (non-nullable).
     :param pswd: Password of the user (non-nullable).
     :param name: Name of the user (non-nullable).
-    :param business_name: Business name (nullable).
     :param role: Role of the user ('USER' or 'BUSINESS').
+    :param business_name: Business name (nullable, required for BUSINESS role).
     """
+    hashed_password = hash_password(pswd)
+
     data = {
         "email": email,
-        "password": pswd,
+        "password": hashed_password,
         "name": name,
         "businessname": business_name,
         "role": role
@@ -35,34 +49,10 @@ def create_user_account(email: str, pswd: str, name: str, business_name: str, ro
 
     response = supabase.table("account").insert(data).execute()
 
-    if response.status_code == 201:
-        print("User account inserted successfully.")
+    if response.data:
+        print("Account inserted successfully.")
     else:
-        print("Failed to insert user account:", response.data)
-
-def create_business_account(email: str, pswd: str, name: str, business_name: str):
-    """
-    Inserts a business account into the Supabase database.
-
-    :param email: Email of the business user (non-nullable).
-    :param pswd: Password of the business user (non-nullable).
-    :param name: Name of the business user (non-nullable).
-    :param business_name: Business name (non-nullable for BUSINESS role).
-    """
-    data = {
-        "email": email,
-        "password": pswd,
-        "name": name,
-        "businessname": business_name,
-        "role": "BUSINESS"
-    }
-
-    response = supabase.table("account").insert(data).execute()
-
-    if response.status_code == 201:
-        print("Business account inserted successfully.")
-    else:
-        print("Failed to insert business account:", response.data)
+        print("Failed:", response)
 
 
 def create_table_event(name: str, number_of_tables: int, avg_table_size: int,
@@ -186,10 +176,16 @@ def create_party(party_size: int, special_requests: str):
 if __name__ == "__main__":
     # Example testers for creating tables in Supabase
     print("gotta put smthn here so the test file runs, will replace with actual tests later -Kyle")
-    # Create a business account
-    # create_business_account(email="business@example.com", pswd="securepassword", name="Business Owner", business_name="Example Business")
 
-    # # Create a table event
+    # Create a business account
+    create_account(email="jburger@example.com", pswd="securepassword", name="Joe Joey", role="BUSINESS", business_name="Joes Burgers")
+    time.sleep(1)  # Add delay to avoid sending requests too fast
+
+    # Create a user account
+    create_account(email="bob@gmail.com", pswd="password123", name="Bob Smith", role="USER", business_name=None)
+    time.sleep(1)  # Add delay to avoid sending requests too fast
+
+    # Uncomment and add delays for other operations if needed
     # create_table_event(
     #     name="Table Event Example",
     #     number_of_tables=10,
@@ -197,20 +193,21 @@ if __name__ == "__main__":
     #     reservation_duration=60,
     #     no_show_policy="No-shows will be charged a fee."
     # )
+    # time.sleep(1)
 
-    # # Create a capacity event
     # create_capacity_event(
     #     name="Capacity Event Example",
     #     location="Main Hall",
     #     capacity=100,
     #     estimated_time_per_person=30
     # )
+    # time.sleep(1)
 
-    # # Create an event table
     # create_event_table(capacity=6)
+    # time.sleep(1)
 
-    # # Create a party
     # create_party(
     #     party_size=5,
     #     special_requests="Vegetarian meal options requested."
     # )
+    # time.sleep(1)
