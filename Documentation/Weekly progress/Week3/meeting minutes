@@ -1,17 +1,26 @@
-March 3, 2026 - Meeting Minutes - GIL Project
+Feb 24 Meeting Minutes – GIL Project
 
 Agenda
-- Jira and Figma access
-- Spec documentation completion
-- User and Business interface testing and debugging
-- Supabase setup complete
-- Login/Sign-up pages created
+
+Frontend and backend progress update
+
+Figma prototype refined
+
+Database Schema
+
+Repository access and management
+
 
 Discussion Summary
-- Reviewed current user-flow and discussed possible features to implement:
-  - Consider hiding less relevant settings and leaving the most relevant ones visible and easily accessible to 
-    increase user experience
-  - Discussed adding a way to remember events and having pre-set staff preferences/settings
-- Reviewed Spec document, discussed reviewing to make sure it matches any changes
-- Supabase is set up, consider integrating Google OAuth
-- Discussed software to consider for future development: Google OAuth, MCP
+
+Frontend Figma prototype is complete; discussed integration into frontend boilerplate.
+
+Backend boilerplate is set up.
+
+Confirmed separate repos for frontend and backend; agreed on giving Codex AI assistants access to both.
+
+App name finalized as GIL (Get In Line);
+
+Highlighted coordination challenges between frontend prototype and backend functionality.
+
+Discussed Database schema
