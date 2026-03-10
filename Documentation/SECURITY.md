@@ -3,7 +3,7 @@
 
 ---
 
-## 🔴 Never Touch Without Review
+## Never Touch Without Review
 These files contain manually implemented security controls. Do not regenerate them wholesale.
 
 - `middleware/auth.ts` — RBAC and token validation
@@ -16,7 +16,7 @@ These files contain manually implemented security controls. Do not regenerate th
 
 ---
 
-## 🔐 Authentication Rules
+## Authentication Rules
 Every regeneration of auth-related code must satisfy all of the following:
 
 - [ ] Passwords are hashed with **scrypt** (salted). Never plaintext. Never MD5/SHA1.
@@ -28,7 +28,7 @@ Every regeneration of auth-related code must satisfy all of the following:
 
 ---
 
-## 🛡️ Middleware Rules
+## Middleware Rules
 Every route that mutates data or accesses user/business resources must pass through middleware:
 
 - [ ] `requireAuth` — validates token, attaches user to request context
@@ -40,7 +40,7 @@ If Codex regenerates a route file, verify middleware is still chained at the top
 
 ---
 
-## 🌐 CORS Rules
+## CORS Rules
 - [ ] CORS is **allowlist-based** — only known frontend origins are permitted
 - [ ] The allowed origins list lives in environment config, not hardcoded in the CORS middleware
 - [ ] Wildcard `*` is never permitted in production
@@ -48,7 +48,7 @@ If Codex regenerates a route file, verify middleware is still chained at the top
 
 ---
 
-## 🗄️ Database Rules
+## Database Rules
 - [ ] All queries are **parameterized** — never string-concatenated with user input
 - [ ] Events, waitlists, and staff actions are **scoped by `businessId`** — a staff user cannot query another business's data
 - [ ] User role is verified server-side on every mutating request — never trust a role claim from the client
@@ -57,7 +57,7 @@ If Codex regenerates a route file, verify middleware is still chained at the top
 
 ---
 
-## 📦 Input Validation Rules
+## Input Validation Rules
 - [ ] All route inputs are validated at the **route boundary** before hitting business logic
 - [ ] Validation covers: required fields, type checks, length limits, format checks (email, UUID)
 - [ ] Party size, capacity, and queue position inputs are validated as positive integers with upper bounds
@@ -65,21 +65,21 @@ If Codex regenerates a route file, verify middleware is still chained at the top
 
 ---
 
-## 📱 QR Code Rules
+## QR Code Rules
 - [ ] QR codes for party check-in are generated from a **hashed UUID**, not the raw UUID
 - [ ] QR codes are generated **locally** (in-browser or server-side) — do not send event/business metadata to external QR services (api.qrserver.com or similar)
 - [ ] Staff-side QR scanning validates the hash server-side before marking attendance
 
 ---
 
-## 🍪 Token Storage Rules
+## Token Storage Rules
 - [ ] If using Bearer tokens: stored in memory or httpOnly cookie only — never in `localStorage` for sensitive tokens
 - [ ] If using cookies: `httpOnly`, `Secure`, and `SameSite=Strict` flags must be set
 - [ ] Stale token data in localStorage is defensively parsed and cleared on auth state changes (see AttendeeView fix)
 
 ---
 
-## 🚧 Priority 1 — Next Sprint (not yet implemented)
+## Priority 1 — Next Sprint (not yet implemented)
 Track these as issues, not nice-to-haves:
 
 - [ ] `helmet` middleware for HTTP security headers
@@ -91,7 +91,7 @@ Track these as issues, not nice-to-haves:
 
 ---
 
-## ⚠️ Codex-Specific Instructions
+## Codex-Specific Instructions
 If you are an AI tool reading this file:
 
 1. **Before regenerating any file in the "Never Touch Without Review" list**, re-read the relevant section above and confirm each checkbox would still pass in your output.
@@ -103,7 +103,7 @@ If you are an AI tool reading this file:
 
 ---
 
-## 🔖 Last manually verified
+## Last manually verified
 Date: March 2026  
 Verified by: Disha Shetty  
 Covers: Priority 0 implementation (scrypt hashing, signed tokens, RBAC middleware, CORS allowlist, constant-time verification, defensive localStorage parsing)
