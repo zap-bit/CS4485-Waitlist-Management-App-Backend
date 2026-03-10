@@ -101,6 +101,21 @@ CREATE TABLE Predictions (
 );
 
 -- =====================================================
+-- Attendance Table
+-- =====================================================
+
+CREATE TABLE Attendance (
+    isPartyLeader BOOLEAN NOT NULL,
+    PartyLeaderUUID UUID,
+    EventUUID UUID NOT NULL REFERENCES Event(UUID) ON DELETE CASCADE,
+    Name TEXT NOT NULL,
+    Present BOOLEAN NOT NULL,
+    PRIMARY KEY (PartyLeaderUUID, EventUUID, Name),
+    CONSTRAINT fk_party_leader FOREIGN KEY (PartyLeaderUUID) REFERENCES Account(UUID),
+    CONSTRAINT fk_event FOREIGN KEY (EventUUID) REFERENCES Event(UUID)
+);
+
+-- =====================================================
 -- INDEXES (Performance Optimization)
 -- =====================================================
 
