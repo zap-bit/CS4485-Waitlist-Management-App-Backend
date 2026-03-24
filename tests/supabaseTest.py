@@ -165,6 +165,13 @@ def create_party(account_uuid, event_uuid, party_size, special_req=None):
     Returns:
         dict: The response from the Supabase database for the party creation.
     """
+    # Check if the event is archived
+    event_check = supabase.table("events").select("archived").eq("uuid", event_uuid).execute()
+    if not event_check.data:
+        raise ValueError("Event not found for the given UUID.")
+    if event_check.data[0]["archived"]:
+        raise ValueError("Cannot create a party for an archived event.")
+
     # Check if a party already exists for the given account_uuid and event_uuid
     existing_party_response = supabase.table("party").select("uuid").eq("account_uuid", account_uuid).eq("event_uuid", event_uuid).execute()
     if existing_party_response.data and len(existing_party_response.data) > 0:
@@ -293,6 +300,75 @@ def set_table_name(table_uuid, new_name):
     response = supabase.table("event_table").update(data).eq("uuid", table_uuid).execute()
     return response
 
+def mark_attendance_present(attendance_uuid):
+    """
+    Marks someone as present in the attendance table given an attendance UUID.
+
+    Parameters:
+        attendance_uuid (str): The UUID of the attendance record to update.
+
+    Returns:
+        dict: The response from the Supabase API.
+    """
+    # Ensure the attendance record exists
+    attendance_check = supabase.table("attendance").select("uuid").eq("uuid", attendance_uuid).execute()
+    if not attendance_check.data:
+        return {"error": "Attendance record with the given UUID does not exist."}
+
+    # Update the attendance record to mark as present
+    update_response = supabase.table("attendance").update({"present": True}).eq("uuid", attendance_uuid).execute()
+    return update_response
+
+def toggle_event_public(event_uuid):
+    """
+    Toggles the 'public' boolean field for a given event_uuid in the events table.
+
+    Parameters:
+        event_uuid (str): The UUID of the event to toggle.
+
+    Returns:
+        dict: The response from the Supabase API.
+    """
+    # Check if the event exists
+    event_check = supabase.table("events").select("public").eq("uuid", event_uuid).execute()
+    if not event_check.data:
+        return {"error": "Event with the given UUID does not exist."}
+
+    # Get the current value of 'public'
+    current_public = event_check.data[0]["public"]
+
+    # Toggle the value
+    new_public = not current_public
+
+    # Update the event
+    update_response = supabase.table("events").update({"public": new_public}).eq("uuid", event_uuid).execute()
+    return update_response
+
+def toggle_event_archive(event_uuid):
+    """
+    Toggles the 'archive' boolean field for a given event_uuid in the events table.
+
+    Parameters:
+        event_uuid (str): The UUID of the event to toggle.
+
+    Returns:
+        dict: The response from the Supabase API.
+    """
+    # Check if the event exists
+    event_check = supabase.table("events").select("archived").eq("uuid", event_uuid).execute()
+    if not event_check.data:
+        return {"error": "Event with the given UUID does not exist."}
+
+    # Get the current value of 'archive'
+    current_archive = event_check.data[0]["archived"]
+
+    # Toggle the value
+    new_archive = not current_archive
+
+    # Update the event
+    update_response = supabase.table("events").update({"archived": new_archive}).eq("uuid", event_uuid).execute()
+    return update_response
+
 # Example usage
 if __name__ == "__main__":
     
@@ -331,3 +407,11 @@ if __name__ == "__main__":
     """UPDATE TABLE"""
     # set_table_capacity("75462301-d82d-4f1a-b11c-c615bd3f9394", 8)
     # set_table_name("37f4a03b-c780-4d99-908b-9dd60ff591eb", "4th Table")
+
+    """MARK PRESENT"""
+    # mark_attendance_present("721a8de3-a737-47c3-b74b-c63660d6118f")
+
+    """PUBLIC/PRIVATE and ARCHIVE EVENT"""
+    # toggle_event_public("c539b519-ac81-4691-9816-26c271c8cec0")
+    # toggle_event_archive("ff445652-ed9f-4e32-8230-6a0b35e405cc")
+    # create_party("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "ff445652-ed9f-4e32-8230-6a0b35e405cc", 4)
