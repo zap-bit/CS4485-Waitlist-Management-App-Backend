@@ -90,15 +90,17 @@ if __name__ == "__main__":
 
     """
     for testing purposes:
-    USER_UUID = dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e
-    BUSS_UUID = eb30833a-45e7-4fa8-9f82-24aa2a292f49
+    USER_UUID = dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e (Bob)
+    BUSS_UUID = eb30833a-45e7-4fa8-9f82-24aa2a292f49 (Joe)
     """
 
     # if commented out, that means it was already tested and added to the supabase DB
 
-    """CREATING USER ACCOUNTS"""
+    """CREATING ACCOUNTS"""
     # create_user_account("Bob", "bob@gmail.com", "password123", 1112223333)
     # create_bus_account("Joe", "joesfood@company.com", "joeshack", "joes food", 1234567890)
+    # create_user_account("Sir. Toby III", "Toby3@gmail.com", "royalToby", 2136547098)
+    # create_bus_account("Jimmy", "hotdogJim@work.com", "jimdog", "JimmyDogs", 9087673554)
 
     """CREATING EVENTS"""
     # create_capacity_event("eb30833a-45e7-4fa8-9f82-24aa2a292f49", "buffet", "plaza", "SINGLE", 10, 30)
