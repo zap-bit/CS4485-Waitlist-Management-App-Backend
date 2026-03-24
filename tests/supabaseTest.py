@@ -47,9 +47,59 @@ def create_bus_account(name, email, pswd, b_name, phone):
     response = supabase.table("account").insert(data).execute()
     return response
 
+# KYLE TODO: EDIT THIS BASED ON THE CAP_TYPE BC WE NEED TO HAVE QUEUES CREATED WITH IT
+def create_capacity_event(account_uuid, name, location, cap_type, queue_capacity, est_wait):
+    """
+    Creates a CAPACITY type event in the EVENTS table on Supabase.
+    """
+    data = {
+        "account_uuid": account_uuid,
+        "name": name,
+        "event_type": "CAPACITY",
+        "location": location,
+        "cap_type": cap_type,
+        "queue_capacity": queue_capacity,
+        "est_wait": est_wait,
+        "archived": False  # Default value for archived
+    }
+    response = supabase.table("events").insert(data).execute()
+    return response
+
+# KYLE TODO: EDIT THIS BASEAD ON NUM_TABLES SO THAT TABLES ARE CREATED WITH AVG_SIZE
+def create_table_event(account_uuid, name, num_tables, avg_size, reservation_duration, no_show_policy):
+    """
+    Creates a TABLE type event in the EVENTS table on Supabase.
+    """
+    data = {
+        "account_uuid": account_uuid,
+        "name": name,
+        "event_type": "TABLE",
+        "num_tables": num_tables,
+        "avg_size": avg_size,
+        "reservation_duration": reservation_duration,
+        "no_show_policy": no_show_policy,
+        "archived": False  # Default value for archived
+    }
+    response = supabase.table("events").insert(data).execute()
+    return response
+
 # Example usage
 if __name__ == "__main__":
-    # Example testers for creating tables in Supabase
+    
     print("testing backend/databse connection -Kyle")
-    create_user_account("Bob", "bob@gmail.com", "password123", 1112223333)
-    create_bus_account("Joe", "joesfood@company.com", "joeshack", "joes food", 1234567890)
+
+    """
+    for testing purposes:
+    USER_UUID = dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e
+    BUSS_UUID = eb30833a-45e7-4fa8-9f82-24aa2a292f49
+    """
+
+    # if commented out, that means it was already tested and added to the supabase DB
+
+    """CREATING USER ACCOUNTS"""
+    # create_user_account("Bob", "bob@gmail.com", "password123", 1112223333)
+    # create_bus_account("Joe", "joesfood@company.com", "joeshack", "joes food", 1234567890)
+
+    """CREATING EVENTS"""
+    # create_capacity_event("eb30833a-45e7-4fa8-9f82-24aa2a292f49", "buffet", "plaza", "SINGLE", 10, 30)
+    # create_table_event("eb30833a-45e7-4fa8-9f82-24aa2a292f49", "chow down", 5, 4, 30, 20)
