@@ -1,131 +1,104 @@
--- =====================================================
--- Updated Schema for Event Waitlist Management System
--- =====================================================
-
--- Create the database (if it doesn't already exist)
--------- CREATE DATABASE event_waitlist;
-
--- Connect to the database
--------- \c event_waitlist;
+-- Define Enums
+CREATE TYPE account_type AS ENUM ('USER', 'BUSINESS');
+CREATE TYPE event_type AS ENUM ('TABLE', 'CAPACITY');
+CREATE TYPE cap_type AS ENUM ('SINGLE', 'MULTI', 'ATTENDANCE');
+CREATE TYPE exit_reason AS ENUM ('SERVED', 'CANCEL', 'NO_SHOW');
 
 -- Enable UUID generation
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- =====================================================
--- ENUM TYPES
--- =====================================================
-
-CREATE TYPE role_type AS ENUM (
-    'USER',
-    'BUSINESS'
-);
-
-CREATE TYPE event_type AS ENUM (
-    'CAPACITY',
-    'TABLE'
-);
-
-CREATE TYPE notification_status AS ENUM (
-    'sent',
-    'failedToSend'
-);
-
--- =====================================================
--- CORE TABLES
--- =====================================================
-
-CREATE TABLE Account (
+-- Table: ACCOUNT
+CREATE TABLE ACCOUNT (
     UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    account_type TEXT NOT NULL CHECK (account_type IN ('USER', 'BUSINESS')),
     email TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    name TEXT NOT NULL,
-    businessName TEXT,
-    role role_type NOT NULL,
+    business_name TEXT,
+    phone TEXT,
     CHECK (
-        (role = 'USER' AND businessName IS NULL) OR
-        (role = 'BUSINESS' AND businessName IS NOT NULL)
+        (account_type = 'USER' AND business_name IS NULL) OR
+        (account_type = 'BUSINESS' AND business_name IS NOT NULL)
     )
 );
 
-CREATE TABLE Event (
+-- Table: EVENTS
+CREATE TABLE EVENTS (
     UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    BusinessAccountUUID UUID NOT NULL REFERENCES Account(UUID) ON DELETE CASCADE,
+    account_uuid UUID NOT NULL REFERENCES ACCOUNT(UUID),
     name TEXT NOT NULL,
-    eventType event_type NOT NULL,
+    event_type TEXT NOT NULL CHECK (event_type IN ('TABLE', 'CAPACITY')),
+    archived BOOLEAN NOT NULL DEFAULT FALSE,
     location TEXT,
-    capacity INTEGER,
-    estimatedTimePerPerson INTEGER,
-    numberOfTables INTEGER,
-    avgTableSize INTEGER,
-    reservationDuration INTEGER,
-    noShowPolicy TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    CHECK (
-        (eventType = 'CAPACITY' AND numberOfTables IS NULL AND avgTableSize IS NULL AND reservationDuration IS NULL AND noShowPolicy IS NULL) OR
-        (eventType = 'TABLE' AND location IS NULL AND capacity IS NULL AND estimatedTimePerPerson IS NULL)
+    cap_type TEXT CHECK (cap_type IN ('SINGLE', 'MULTI', 'ATTENDANCE')),
+    queue_capacity INTEGER,
+    est_wait INTEGER,
+    num_tables INTEGER,
+    avg_size INTEGER,
+    reservation_duration INTEGER,
+    no_show_policy INTEGER,
+    no_show_rate INTEGER,
+    avg_service_time INTEGER,
+    CONSTRAINT event_type_constraints CHECK (
+        (event_type = 'CAPACITY' AND cap_type IS NOT NULL AND queue_capacity IS NOT NULL AND est_wait IS NOT NULL AND num_tables IS NULL AND avg_size IS NULL AND reservation_duration IS NULL AND no_show_policy IS NULL AND no_show_rate IS NULL AND avg_service_time IS NULL) OR
+        (event_type = 'TABLE' AND num_tables IS NOT NULL AND avg_size IS NOT NULL AND reservation_duration IS NOT NULL AND no_show_policy IS NOT NULL AND cap_type IS NULL AND queue_capacity IS NULL AND est_wait IS NULL AND no_show_rate IS NULL AND avg_service_time IS NULL)
     )
 );
 
-CREATE TABLE Party (
+-- Table: PARTY
+CREATE TABLE PARTY (
     UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    PartyLeaderUUID UUID NOT NULL REFERENCES Account(UUID),
-    EventUUID UUID NOT NULL REFERENCES Event(UUID) ON DELETE CASCADE,
-    partySize INTEGER NOT NULL,
-    specialRequests TEXT
+    account_uuid UUID NOT NULL REFERENCES ACCOUNT(UUID),
+    event_uuid UUID NOT NULL REFERENCES EVENTS(UUID),
+    party_size INTEGER NOT NULL,
+    special_req TEXT
 );
 
-CREATE TABLE EventTable (
+-- Table: EVENT_TABLE
+CREATE TABLE EVENT_TABLE (
     UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    EventUUID UUID NOT NULL REFERENCES Event(UUID) ON DELETE CASCADE,
-    PartyLeaderUUID UUID REFERENCES Account(UUID),
-    PartyUUID UUID REFERENCES Party(UUID), -- Added connection to Party table
-    capacity INTEGER NOT NULL
+    account_uuid UUID REFERENCES ACCOUNT(UUID),
+    event_uuid UUID NOT NULL REFERENCES EVENTS(UUID),
+    table_capacity INTEGER NOT NULL,
+    name TEXT NOT NULL
 );
 
-CREATE TABLE Notifications (
+-- Table: CAP_WAITLIST
+CREATE TABLE CAP_WAITLIST (
     UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    PartyLeaderUUID UUID NOT NULL REFERENCES Account(UUID),
-    EventUUID UUID NOT NULL REFERENCES Event(UUID),
-    status notification_status NOT NULL,
-    sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    account_uuid UUID NOT NULL REFERENCES ACCOUNT(UUID),
+    event_uuid UUID NOT NULL REFERENCES EVENTS(UUID),
+    dropped_out BOOLEAN NOT NULL,
+    no_show BOOLEAN NOT NULL,
+    exit_reason TEXT CHECK (exit_reason IN ('SERVED', 'CANCEL', 'NO_SHOW'))
 );
 
-CREATE TABLE Predictions (
+-- Table: TABLE_QUEUE
+CREATE TABLE TABLE_QUEUE (
     UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    EventUUID UUID NOT NULL REFERENCES Event(UUID) ON DELETE CASCADE,
-    PredictedWaittime INTEGER,
-    PredictedNoShowRate NUMERIC(5, 2),
-    PredictedFillRate NUMERIC(5, 2),
-    ModelVersion TEXT NOT NULL,
-    GeneratedAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    account_uuid UUID NOT NULL REFERENCES ACCOUNT(UUID),
+    event_uuid UUID NOT NULL REFERENCES EVENTS(UUID),
+    est_wait INTEGER NOT NULL,
+    queue_capacity INTEGER NOT NULL,
+    interaction_count INTEGER,
+    last_active_time TIMESTAMP WITH TIME ZONE,
+    high_risk BOOLEAN
 );
 
--- =====================================================
--- Attendance Table
--- =====================================================
-
-CREATE TABLE Attendance (
-    isPartyLeader BOOLEAN NOT NULL,
-    PartyLeaderUUID UUID,
-    EventUUID UUID NOT NULL REFERENCES Event(UUID) ON DELETE CASCADE,
-    Name TEXT NOT NULL,
-    Present BOOLEAN NOT NULL,
-    PRIMARY KEY (PartyLeaderUUID, EventUUID, Name),
-    CONSTRAINT fk_party_leader FOREIGN KEY (PartyLeaderUUID) REFERENCES Account(UUID),
-    CONSTRAINT fk_event FOREIGN KEY (EventUUID) REFERENCES Event(UUID)
+-- Table: ATTENDANCE
+CREATE TABLE ATTENDANCE (
+    party_leader BOOLEAN NOT NULL,
+    account_uuid UUID NOT NULL REFERENCES ACCOUNT(UUID),
+    event_uuid UUID NOT NULL REFERENCES EVENTS(UUID),
+    name TEXT NOT NULL,
+    present BOOLEAN NOT NULL,
+    PRIMARY KEY (account_uuid, event_uuid, name)
 );
 
--- =====================================================
--- INDEXES (Performance Optimization)
--- =====================================================
-
-CREATE INDEX idx_events_business ON Event(BusinessAccountUUID);
-CREATE INDEX idx_eventtables_event ON EventTable(EventUUID);
-CREATE INDEX idx_parties_event ON Party(EventUUID);
-CREATE INDEX idx_notifications_event ON Notifications(EventUUID);
-CREATE INDEX idx_notifications_partyleader ON Notifications(PartyLeaderUUID);
-CREATE INDEX idx_predictions_event ON Predictions(EventUUID);
-
--- =====================================================
--- END OF SCHEMA
--- ======================================================
+-- Table: NOTIFICATIONS
+CREATE TABLE NOTIFICATIONS (
+    UUID UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_uuid UUID NOT NULL REFERENCES ACCOUNT(UUID),
+    event_uuid UUID NOT NULL REFERENCES EVENTS(UUID),
+    sent_time TIMESTAMP WITH TIME ZONE NOT NULL
+);
