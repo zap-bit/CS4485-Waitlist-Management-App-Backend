@@ -51,6 +51,19 @@ def create_bus_account(name, email, pswd, b_name, phone):
 def create_capacity_event(account_uuid, name, location, cap_type, queue_capacity, est_wait):
     """
     Creates a CAPACITY type event in the EVENTS table on Supabase.
+
+    If cap_type is "SINGLE", it also creates a queue for the event.
+
+    Parameters:
+        account_uuid (str): The UUID of the account.
+        name (str): The name of the event.
+        location (str): The location of the event.
+        cap_type (str): The capacity type of the event.
+        queue_capacity (int): The capacity of the queue.
+        est_wait (int): The estimated wait time for the queue.
+
+    Returns:
+        dict: The response from the Supabase database for the event creation.
     """
     data = {
         "account_uuid": account_uuid,
@@ -62,10 +75,21 @@ def create_capacity_event(account_uuid, name, location, cap_type, queue_capacity
         "est_wait": est_wait,
         "archived": False  # Default value for archived
     }
-    response = supabase.table("events").insert(data).execute()
-    return response
+    event_response = supabase.table("events").insert(data).execute()
 
-# KYLE TODO: EDIT THIS BASEAD ON NUM_TABLES SO THAT TABLES ARE CREATED WITH AVG_SIZE
+    # Ensure the response contains data
+    if not event_response.data or len(event_response.data) == 0:
+        raise ValueError("Failed to create event or retrieve event UUID.")
+
+    # Extract the event UUID
+    event_uuid = event_response.data[0]["uuid"]
+
+    # If cap_type is SINGLE, create a queue
+    if cap_type == "SINGLE":
+        create_queue(event_uuid, est_wait, queue_capacity)
+
+    return event_response
+
 def create_table(event_uuid, table_name, table_capacity):
     """
     Creates a table entry in the Supabase database.
@@ -141,6 +165,13 @@ def create_party(account_uuid, event_uuid, party_size, special_req=None):
     Returns:
         dict: The response from the Supabase database for the party creation.
     """
+    # Check if a party already exists for the given account_uuid and event_uuid
+    existing_party_response = supabase.table("party").select("uuid").eq("account_uuid", account_uuid).eq("event_uuid", event_uuid).execute()
+    if existing_party_response.data and len(existing_party_response.data) > 0:
+        # TODO: tell user that they have already made a party, and then they can decide to replace it or not?
+        print("Debug: Party already exists for the given account_uuid and event_uuid.")
+        return None
+
     # Fetch the name associated with the account_uuid
     account_response = supabase.table("account").select("name").eq("uuid", account_uuid).execute()
     if not account_response.data or len(account_response.data) == 0:
@@ -194,6 +225,74 @@ def assign_user_to_table(table_uuid, account_uuid):
     response = supabase.table("event_table").update(data).eq("uuid", table_uuid).execute()
     return response
 
+def create_queue(event_uuid, est_wait, queue_capacity):
+    """
+    Creates a queue entry in the Supabase database.
+
+    Parameters:
+        account_uuid (str): The UUID of the account.
+        event_uuid (str): The UUID of the event.
+        est_wait (int): The estimated wait time for the queue.
+        queue_capacity (int): The capacity of the queue.
+
+    Returns:
+        dict: The response from the Supabase database.
+    """
+    data = {
+        "event_uuid": event_uuid,
+        "est_wait": est_wait,
+        "queue_capacity": queue_capacity
+    }
+    response = supabase.table("queue").insert(data).execute()
+    return response
+
+def set_table_capacity(table_uuid, new_capacity):
+    """
+    Updates the capacity of a table in the Supabase database.
+
+    Parameters:
+        table_uuid (str): The UUID of the table to update.
+        new_capacity (int): The new capacity to set for the table.
+
+    Returns:
+        dict: The response from the Supabase database.
+    """
+    # Check if the table exists
+    existing_table_response = supabase.table("event_table").select("uuid").eq("uuid", table_uuid).execute()
+    print("Debug: existing_table_response:", existing_table_response)
+    if not existing_table_response.data or len(existing_table_response.data) == 0:
+        raise ValueError("Table not found for the given UUID.")
+
+    # Update the table capacity
+    data = {
+        "table_capacity": new_capacity
+    }
+    response = supabase.table("event_table").update(data).eq("uuid", table_uuid).execute()
+    return response
+
+def set_table_name(table_uuid, new_name):
+    """
+    Updates the name of a table in the database.
+
+    Parameters:
+        table_uuid (str): The UUID of the table to update.
+        new_name (str): The new name for the table.
+
+    Returns:
+        dict: The response from the Supabase API.
+    """
+    # Check if the table exists
+    existing_table_response = supabase.table("event_table").select("uuid").eq("uuid", table_uuid).execute()
+    if not existing_table_response.data or len(existing_table_response.data) == 0:
+        raise ValueError("Table not found for the given UUID.")
+
+    # Update the table capacity
+    data = {
+        "name": new_name
+    }
+    response = supabase.table("event_table").update(data).eq("uuid", table_uuid).execute()
+    return response
+
 # Example usage
 if __name__ == "__main__":
     
@@ -220,10 +319,15 @@ if __name__ == "__main__":
     # create_capacity_event("eb30833a-45e7-4fa8-9f82-24aa2a292f49", "buffet", "plaza", "SINGLE", 10, 30)
     # create_table_event("eb30833a-45e7-4fa8-9f82-24aa2a292f49", "chow down", 5, 4, 30, 20)
     # create_table_event("eb30833a-45e7-4fa8-9f82-24aa2a292f49", "nom nom time", 6, 5, 30, 20)
+    # create_capacity_event("eb30833a-45e7-4fa8-9f82-24aa2a292f49", "cap cap", "mall", "SINGLE", 10, 30)
 
     """CREATING PARTY"""
-    create_party("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "ff445652-ed9f-4e32-8230-6a0b35e405cc", 4)
-    create_party("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "3f1ec332-d5ac-4cfb-b7a6-cc75abe889f4", 2, "Vegan")
+    # create_party("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "ff445652-ed9f-4e32-8230-6a0b35e405cc", 4)
+    # create_party("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "3f1ec332-d5ac-4cfb-b7a6-cc75abe889f4", 2, "Vegan")
 
     """ASSIGNING USER TO TABLE"""
     # assign_user_to_table("a1a15974-93b0-4714-8894-35edca7df2a9", "dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e")
+
+    """UPDATE TABLE"""
+    # set_table_capacity("75462301-d82d-4f1a-b11c-c615bd3f9394", 8)
+    # set_table_name("37f4a03b-c780-4d99-908b-9dd60ff591eb", "4th Table")
