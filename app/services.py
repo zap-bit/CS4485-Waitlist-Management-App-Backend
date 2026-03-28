@@ -15,6 +15,7 @@ from app.models import (
     Table,
     WaitlistCreate,
     WaitlistEntry,
+    now_utc,
 )
 from app.store import store
 
@@ -40,6 +41,86 @@ def get_event(event_id: str) -> Event:
         raise ApiError(404, "RESOURCE_NOT_FOUND", "Event not found", {"eventId": event_id})
     return event
 
+def get_real_time_no_show_rate(event_id: str) -> float:
+    entries = store.waitlists.get(event_id, [])
+    finished = [e for e in entries if e.status in {EntryStatus.SEATED, EntryStatus.NO_SHOW}]
+    
+    if len(finished) < 5:  
+        event = get_event(event_id)
+        return getattr(event, 'historical_no_show_rate', 0.15) 
+
+    no_shows = sum(1 for e in finished if e.status == EntryStatus.NO_SHOW)
+    return no_shows / len(finished)
+
+def update_event_service_time(event_id: str):
+    event = get_event(event_id)
+    entries = store.waitlists.get(event_id, [])
+    
+    seated_entries = [e for e in entries if e.status == EntryStatus.SEATED]
+    
+    if not seated_entries:
+        return 
+
+    elapsed_time = (now_utc() - event.startTime).total_seconds() / 60
+    
+    if elapsed_time < 1:
+        return
+
+    new_avg = elapsed_time / len(seated_entries)
+    
+    event.avg_service_time = max(2, min(60, round(new_avg, 1)))
+
+def get_user_weight(entry: WaitlistEntry) -> float:
+    now = now_utc()
+    minutes_stale = (now - entry.lastActiveTime).total_seconds() / 60
+    
+    grace_period = max(20, min(90, entry.estimatedWait * 0.5))
+
+    if minutes_stale <= grace_period:
+        weight = 1.0 
+    elif minutes_stale >= (grace_period + 20):
+        weight = 0.1
+    else:
+        weight = 1.0 - (0.9 * (minutes_stale - grace_period) / 20)
+    
+    if entry.interactionCount > 5:
+        weight = min(1.0, weight + 0.1) 
+
+    return round(weight, 2)
+
+def calculate_heuristic_wait(event_id: str) -> int:
+    event = get_event(event_id)
+    entries = store.waitlists.get(event_id, [])
+    queue = [e for e in entries if e.status == EntryStatus.QUEUED]
+    
+    if not queue:
+        return 0
+
+    weighted_count = sum(get_user_weight(e) for e in queue)
+
+    no_show_rate = get_real_time_no_show_rate(event_id)
+    adjusted_count = weighted_count * (1 - no_show_rate)
+
+    service_time = getattr(event, 'avg_service_time', 10) or 10
+    
+    return ceil(adjusted_count * service_time)
+
+def update_user_activity(event_id: str, entry_id: str):
+    entry = get_waitlist_entry(event_id, entry_id)
+    entry.interactionCount += 1
+    entry.lastActiveTime = now_utc()
+    entry.isHighRisk = False # Reset risk since they just interacted
+
+def mark_no_show(event_id: str, entry_id: str) -> WaitlistEntry:
+    get_event(event_id)
+    entry = get_waitlist_entry(event_id, entry_id)
+
+    if entry.status not in {EntryStatus.NOTIFIED, EntryStatus.QUEUED}:
+        raise ApiError(409, "INVALID_INPUT", "Only queued or notified guests can be marked as No-Show")
+
+    entry.status = EntryStatus.NO_SHOW
+    
+    return entry
 
 def add_waitlist_entry(event_id: str, payload: WaitlistCreate) -> WaitlistEntry:
     get_event(event_id)
@@ -144,4 +225,5 @@ def seat(event_id: str, payload: SeatRequest) -> WaitlistEntry:
         entry.assignedTableId = table.id
 
     entry.status = EntryStatus.SEATED
+    update_event_service_time(event_id)
     return entry

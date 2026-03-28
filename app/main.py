@@ -26,9 +26,12 @@ from app.services import (
     get_dashboard,
     get_event,
     get_waitlist_entry,
-    list_waitlist,
+    list_waitlist,   
     promote,
     seat,
+    update_user_activity,   
+    calculate_heuristic_wait,    
+    mark_no_show,          
 )
 
 
@@ -121,6 +124,20 @@ def sync_endpoint(payload: SyncRequest):
         "processed": len(payload.operations),
         "conflicts": conflicts,
     }
+
+@router.get("/events/{event_id}/predicted-wait")
+def get_predicted_wait(event_id: str, _=Depends(require_auth)):
+    wait_minutes = calculate_heuristic_wait(event_id)
+    return {"minutes_remaining": wait_minutes}
+
+@router.post("/events/{event_id}/entries/{entry_id}/ping")
+def ping_activity(event_id: str, entry_id: str):
+    update_user_activity(event_id, entry_id)
+    return {"status": "active"}
+
+@router.post("/events/{event_id}/staff/no-show", dependencies=[Depends(require_auth)])
+def mark_no_show_endpoint(event_id: str, payload: SeatRequest):
+    return mark_no_show(event_id, payload.entryId)
 
 
 # Primary API contract: /v1/*

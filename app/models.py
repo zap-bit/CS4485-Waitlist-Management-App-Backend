@@ -82,6 +82,8 @@ class Event(BaseModel):
     tables: list[Table] = Field(default_factory=list)
 
     model_config = ConfigDict(use_enum_values=True)
+    reservation_duration: int | None = 45 
+    avg_service_time: int | None = 10     
 
 
 class WaitlistCreate(BaseModel):
@@ -104,6 +106,9 @@ class WaitlistEntry(BaseModel):
     estimatedWait: int
     joinedAt: datetime = Field(default_factory=now_utc)
     assignedTableId: int | None = None
+    interactionCount: int = 0
+    lastActiveTime: datetime = Field(default_factory=now_utc)
+    isHighRisk: bool = False
 
 
 class DashboardResponse(BaseModel):
