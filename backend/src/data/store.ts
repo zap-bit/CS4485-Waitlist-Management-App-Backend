@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
-import { hashPassword } from '../utils/security.js';
-import type { BusinessModel, EventModel, UserModel, WaitlistEntry } from '../types/contracts.js';
+import type { AccessSession, BusinessModel, EventModel, RefreshSession, UserModel, WaitlistEntry } from '../types/contracts.js';
+import { hashPassword } from '../lib/security.js';
 
 const makeTables = (totalTables = 12) => {
   const cols = 4;
@@ -16,40 +16,6 @@ const makeTables = (totalTables = 12) => {
 
 const now = new Date();
 const demoBusinessId = 'biz-demo';
-
-const demoEvent: EventModel = {
-  id: 'demo-event',
-  businessId: demoBusinessId,
-  name: 'Figma Demo Restaurant',
-  type: 'table-based',
-  status: 'active',
-  createdAt: now.toISOString(),
-  numberOfTables: 12,
-  averageTableSize: 4,
-  reservationDuration: 90,
-  noShowPolicy: 'Hold table for 15 minutes',
-  currentFilledTables: 1,
-  tables: makeTables(12),
-  waitlist: [
-    {
-      id: nanoid(),
-      eventId: 'demo-event',
-      queueId: 'main',
-      name: 'Sarah Johnson',
-      partySize: 4,
-      type: 'waitlist',
-      status: 'QUEUED',
-      position: 1,
-      estimatedWait: 20,
-      joinedAt: new Date(now.getTime() - 15 * 60 * 1000).toISOString(),
-    },
-  ],
-};
-
-demoEvent.tables[0].occupied = true;
-demoEvent.tables[0].guestName = 'Michael Chen';
-demoEvent.tables[0].partySize = 2;
-demoEvent.tables[0].seatedAt = new Date(now.getTime() - 12 * 60 * 1000).toISOString();
 
 const demoBusiness: BusinessModel = {
   id: demoBusinessId,
@@ -72,6 +38,40 @@ const demoAttendeeUser: UserModel = {
   role: 'user',
 };
 
+const demoEvent: EventModel = {
+  id: 'demo-event',
+  businessId: demoBusinessId,
+  name: 'Figma Demo Restaurant',
+  type: 'table-based',
+  status: 'active',
+  createdAt: now.toISOString(),
+  numberOfTables: 12,
+  averageTableSize: 4,
+  reservationDuration: 90,
+  noShowPolicy: 'Hold table for 15 minutes',
+  currentFilledTables: 1,
+  tables: makeTables(12),
+  waitlist: [
+    {
+      id: nanoid(),
+      eventId: 'demo-event',
+      name: 'Sarah Johnson',
+      partySize: 4,
+      type: 'waitlist',
+      status: 'QUEUED',
+      position: 1,
+      estimatedWait: 20,
+      joinedAt: new Date(now.getTime() - 15 * 60 * 1000).toISOString(),
+      createdByUserId: demoAttendeeUser.id,
+    },
+  ],
+};
+
+demoEvent.tables[0].occupied = true;
+demoEvent.tables[0].guestName = 'Michael Chen';
+demoEvent.tables[0].partySize = 2;
+demoEvent.tables[0].seatedAt = new Date(now.getTime() - 12 * 60 * 1000).toISOString();
+
 export const db = {
   events: new Map<string, EventModel>([[demoEvent.id, demoEvent]]),
   users: new Map<string, UserModel>([
@@ -82,54 +82,48 @@ export const db = {
     [demoStaffUser.email.toLowerCase(), demoStaffUser.id],
     [demoAttendeeUser.email.toLowerCase(), demoAttendeeUser.id],
   ]),
-  passwords: new Map<string, string>([
-    [demoStaffUser.id, hashPassword('password123')],
-    [demoAttendeeUser.id, hashPassword('password123')],
-  ]),
+  passwordHashes: new Map<string, string>(),
   businesses: new Map<string, BusinessModel>([[demoBusiness.id, demoBusiness]]),
-  tokens: new Map<string, string>(),
+  accessTokens: new Map<string, AccessSession>(),
+  refreshTokens: new Map<string, RefreshSession>(),
 };
 
-export function recalcQueuePositions(eventId: string, queueId?: string) {
-  const event = db.events.get(eventId);
-  if (!event) return;
-
-  const counters = new Map<string, number>();
-  event.waitlist = event.waitlist.map((entry) => {
-    if (queueId && entry.queueId !== queueId) return entry;
-
-    const key = `${entry.type}::${entry.queueId ?? 'default'}`;
-    const nextPosition = (counters.get(key) ?? 0) + 1;
-    counters.set(key, nextPosition);
-
-    return {
-      ...entry,
-      position: nextPosition,
-      estimatedWait: Math.max(5, nextPosition * 8),
-    };
-  });
+export async function seedStore() {
+  if (!db.passwordHashes.size) {
+    db.passwordHashes.set(demoStaffUser.id, await hashPassword('password123'));
+    db.passwordHashes.set(demoAttendeeUser.id, await hashPassword('password123'));
+  }
 }
 
-export function addWaitlistEntry(eventId: string, payload: Pick<WaitlistEntry, 'name' | 'partySize' | 'type' | 'specialRequests' | 'queueId'>) {
+export function recalcQueuePositions(eventId: string) {
+  const event = db.events.get(eventId);
+  if (!event) return;
+  event.waitlist = event.waitlist.map((entry, idx) => ({
+    ...entry,
+    position: idx + 1,
+    estimatedWait: Math.max(5, (idx + 1) * 8),
+  }));
+}
+
+export function addWaitlistEntry(
+  eventId: string,
+  payload: Pick<WaitlistEntry, 'name' | 'partySize' | 'type' | 'specialRequests' | 'createdByUserId'>,
+) {
   const event = db.events.get(eventId);
   if (!event) return null;
-
-  const bucketSize = event.waitlist.filter(
-    (item) => item.type === payload.type && item.queueId === payload.queueId,
-  ).length;
 
   const entry: WaitlistEntry = {
     id: nanoid(),
     eventId,
-    queueId: payload.queueId,
     name: payload.name,
     partySize: payload.partySize,
     type: payload.type,
     status: 'QUEUED',
-    position: bucketSize + 1,
-    estimatedWait: Math.max(5, (bucketSize + 1) * 8),
+    position: event.waitlist.length + 1,
+    estimatedWait: Math.max(5, (event.waitlist.length + 1) * 8),
     specialRequests: payload.specialRequests,
     joinedAt: new Date().toISOString(),
+    createdByUserId: payload.createdByUserId,
   };
 
   event.waitlist.push(entry);
@@ -138,6 +132,6 @@ export function addWaitlistEntry(eventId: string, payload: Pick<WaitlistEntry, '
     event.currentCount += payload.partySize;
   }
 
-  recalcQueuePositions(eventId, payload.queueId);
+  recalcQueuePositions(eventId);
   return entry;
 }

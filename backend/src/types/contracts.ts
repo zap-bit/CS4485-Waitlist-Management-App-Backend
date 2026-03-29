@@ -3,19 +3,10 @@ export type EntryStatus = 'QUEUED' | 'NOTIFIED' | 'SEATED' | 'NO_SHOW' | 'CANCEL
 
 export type EventType = 'capacity-based' | 'table-based';
 export type EventStatus = 'active' | 'paused' | 'closed';
-export type QueueMode = 'single' | 'multiple';
-
-export interface Queue {
-  id: string;
-  name: string;
-  capacity: number;
-  currentCount: number;
-}
 
 export interface WaitlistEntry {
   id: string;
   eventId: string;
-  queueId?: string;
   name: string;
   partySize: number;
   type: EntryType;
@@ -24,6 +15,7 @@ export interface WaitlistEntry {
   estimatedWait: number;
   specialRequests?: string;
   joinedAt: string;
+  createdByUserId: string;
 }
 
 export interface Table {
@@ -51,12 +43,10 @@ export interface BaseEvent {
 
 export interface CapacityEvent extends BaseEvent {
   type: 'capacity-based';
-  queueMode: QueueMode;
   capacity: number;
   estimatedWaitPerPerson: number;
   location: string;
   currentCount: number;
-  queues?: Queue[];
 }
 
 export interface TableEvent extends BaseEvent {
@@ -82,4 +72,14 @@ export interface BusinessModel {
   id: string;
   name: string;
   ownerId: string;
+}
+
+export interface AccessSession {
+  userId: string;
+  expiresAt: number;
+}
+
+export interface RefreshSession {
+  userId: string;
+  expiresAt: number;
 }
