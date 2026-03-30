@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { addWaitlistEntry, db, recalcQueuePositions } from '../data/store.js';
 import { requireAuth } from '../middleware/auth.js';
 import { ApiError } from '../middleware/error.js';
+import { updateUserActivity } from '../lib/models.js';
 
 export const waitlistRouter = Router({ mergeParams: true });
 
@@ -11,6 +12,12 @@ waitlistRouter.get('/', (req, res, next) => {
   const { eventId } = req.params as { eventId: string };
   const event = db.events.get(eventId);
   if (!event) return next(new ApiError(404, 'RESOURCE_NOT_FOUND', 'Event not found', { eventId }));
+
+  const userEntry = event.waitlist.find((item) => item.createdByUserId === req.authUser!.id);
+  if (userEntry) {
+    updateUserActivity(userEntry);
+    recalcQueuePositions(eventId);
+  }
 
   if (req.authUser?.role === 'staff') {
     if (!req.authUser.businessId || event.businessId !== req.authUser.businessId) {
@@ -61,6 +68,9 @@ waitlistRouter.get('/:entryId', (req, res, next) => {
   if (!isStaffWithAccess && !isOwner) {
     return next(new ApiError(403, 'FORBIDDEN', 'You cannot access this waitlist entry'));
   }
+
+  updateUserActivity(entry); 
+  recalcQueuePositions(eventId);
 
   return res.json(entry);
 });

@@ -64,6 +64,9 @@ function toEvent(payload: EventPayload, existing?: EventModel): EventModel {
         Number(payload.estimatedWaitPerPerson ?? (existing?.type === 'capacity-based' ? existing.estimatedWaitPerPerson : 5)) || 5,
       location: String(payload.location ?? (existing?.type === 'capacity-based' ? existing.location : 'Main Entrance')).trim() || 'Main Entrance',
       currentCount: Number(payload.currentCount ?? (existing?.type === 'capacity-based' ? existing.currentCount : 0)) || 0,
+      avgServiceTime: existing?.type === 'capacity-based' ? existing.avgServiceTime : 10,
+      historicalNoShowRate: existing?.type === 'capacity-based' ? existing.historicalNoShowRate : 0.15,
+      startTime: existing?.type === 'capacity-based' ? existing.startTime : new Date().toISOString(),
     };
   }
 
@@ -81,6 +84,9 @@ function toEvent(payload: EventPayload, existing?: EventModel): EventModel {
       'Hold table for 15 minutes',
     currentFilledTables:
       Number(payload.currentFilledTables ?? (existing?.type === 'table-based' ? existing.currentFilledTables : 0)) || 0,
+    avgServiceTime: existing?.type === 'table-based' ? existing.avgServiceTime : 10,
+    historicalNoShowRate: existing?.type === 'table-based' ? existing.historicalNoShowRate : 0.15,
+    startTime: existing?.type === 'table-based' ? existing.startTime : new Date().toISOString(),
   };
 }
 

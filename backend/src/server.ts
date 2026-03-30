@@ -45,9 +45,9 @@ app.use(rateLimit);
 app.get('/health', (_req, res) => res.json({ ok: true, securityHeaders: true }));
 
 app.use('/v1/auth', authRouter);
-app.use('/v1/events', eventsRouter);
 app.use('/v1/events/:eventId/waitlist', waitlistRouter);
 app.use('/v1/events/:eventId/staff', staffRouter);
+app.use('/v1/events', eventsRouter);
 app.use('/v1/sync', syncRouter);
 
 app.use(notFound);

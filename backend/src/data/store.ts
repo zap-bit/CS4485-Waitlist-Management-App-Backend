@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import type { AccessSession, BusinessModel, EventModel, RefreshSession, UserModel, WaitlistEntry } from '../types/contracts.js';
 import { hashPassword } from '../lib/security.js';
+import { calculateHeuristicWait } from '../lib/models.js'; 
 
 const makeTables = (totalTables = 12) => {
   const cols = 4;
@@ -51,6 +52,9 @@ const demoEvent: EventModel = {
   noShowPolicy: 'Hold table for 15 minutes',
   currentFilledTables: 1,
   tables: makeTables(12),
+  avgServiceTime: 5,           
+  historicalNoShowRate: 0.15,   
+  startTime: now.toISOString(),
   waitlist: [
     {
       id: nanoid(),
@@ -63,6 +67,9 @@ const demoEvent: EventModel = {
       estimatedWait: 20,
       joinedAt: new Date(now.getTime() - 15 * 60 * 1000).toISOString(),
       createdByUserId: demoAttendeeUser.id,
+      interactionCount: 0,      
+      lastActiveTime: now.toISOString(), 
+      isHighRisk: false,        
     },
   ],
 };
@@ -97,13 +104,36 @@ export async function seedStore() {
 
 export function recalcQueuePositions(eventId: string) {
   const event = db.events.get(eventId);
-  if (!event) return;
-  event.waitlist = event.waitlist.map((entry, idx) => ({
-    ...entry,
-    position: idx + 1,
-    estimatedWait: Math.max(5, (idx + 1) * 8),
-  }));
+  if (!event) {
+    console.log(`[RECALC] Error: Event ${eventId} not found`);
+    return;
+  }
+
+  const totalPredictedWait = calculateHeuristicWait(event);
+  const queuedEntries = event.waitlist.filter(e => e.status === 'QUEUED');
+  const totalInQueue = queuedEntries.length || 1;
+
+  event.waitlist = event.waitlist.map((entry) => {
+    if (entry.status !== 'QUEUED') return entry;
+
+    const relativePos = queuedEntries.findIndex(e => e.id === entry.id) + 1;
+    const calculatedWait = Math.ceil((totalPredictedWait / totalInQueue) * relativePos);
+    
+    return {
+      ...entry,
+      position: relativePos,
+      estimatedWait: Math.max(5, calculatedWait), 
+    };
+  });
 }
+
+setInterval(() => {
+  db.events.forEach((event, eventId) => {
+    if (event.status === 'active') {
+      recalcQueuePositions(eventId);
+    }
+  });
+}, 60000);
 
 export function addWaitlistEntry(
   eventId: string,
@@ -120,10 +150,13 @@ export function addWaitlistEntry(
     type: payload.type,
     status: 'QUEUED',
     position: event.waitlist.length + 1,
-    estimatedWait: Math.max(5, (event.waitlist.length + 1) * 8),
+    estimatedWait: 5, 
     specialRequests: payload.specialRequests,
     joinedAt: new Date().toISOString(),
     createdByUserId: payload.createdByUserId,
+    interactionCount: 0,
+    lastActiveTime: new Date().toISOString(),
+    isHighRisk: false,
   };
 
   event.waitlist.push(entry);
@@ -133,5 +166,7 @@ export function addWaitlistEntry(
   }
 
   recalcQueuePositions(eventId);
-  return entry;
+  const updatedEntry = event.waitlist.find(e => e.id === entry.id);
+  
+  return updatedEntry || entry;
 }

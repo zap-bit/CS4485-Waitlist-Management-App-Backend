@@ -16,6 +16,9 @@ export interface WaitlistEntry {
   specialRequests?: string;
   joinedAt: string;
   createdByUserId: string;
+  interactionCount: number;   
+  lastActiveTime: string;     
+  isHighRisk: boolean;        
 }
 
 export interface Table {
@@ -39,6 +42,9 @@ export interface BaseEvent {
   createdAt: string;
   waitlist: WaitlistEntry[];
   tables: Table[];
+  avgServiceTime: number;      
+  historicalNoShowRate: number; 
+  startTime: string;           
 }
 
 export interface CapacityEvent extends BaseEvent {
