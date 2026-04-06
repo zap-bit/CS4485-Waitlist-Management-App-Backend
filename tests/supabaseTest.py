@@ -484,6 +484,23 @@ def login(email, password):
 
     return True
 
+def does_party_exist(account_uuid, event_uuid):
+    """
+    Checks if a party exists for the given account_uuid and event_uuid.
+
+    Parameters:
+        account_uuid (str): The UUID of the user account.
+        event_uuid (str): The UUID of the event.
+
+    Returns:
+        bool: True if a party exists, False otherwise.
+    """
+    # Query the "party" table for an entry matching the account_uuid and event_uuid
+    party_response = supabase.table("party").select("uuid").eq("account_uuid", account_uuid).eq("event_uuid", event_uuid).execute()
+
+    # Return True if data exists, otherwise False
+    return bool(party_response.data)
+
 # Example usage
 if __name__ == "__main__":
     
@@ -550,3 +567,7 @@ if __name__ == "__main__":
 
     """CODE BASED JOINING"""
     # create_party_with_code("832f9b71-ddd1-4ef2-9f7a-8169e582f62b", "258949b9", 10, "no requests from me! :) (idk i was bored so now this is here -Kyle)")
+
+    """PARTY EXISTING OR NOT"""
+    # print(does_party_exist("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "3f1ec332-d5ac-4cfb-b7a6-cc75abe889f4")) # there is a party so should be TRUE
+    # print(does_party_exist("832f9b71-ddd1-4ef2-9f7a-8169e582f62b", "ff445652-ed9f-4e32-8230-6a0b35e405cc")) # no party so should be FALSE
