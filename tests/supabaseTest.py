@@ -216,6 +216,56 @@ def create_party(account_uuid, event_uuid, party_size, special_req=None):
 
     return party_response
 
+def edit_party(account_uuid, event_uuid, party_size, special_req=None):
+    """
+    Edits an existing party entry in the Supabase database by updating the party_size and special_req columns.
+    Also updates the attendance table to match the new party size.
+
+    Parameters:
+        account_uuid (str): The UUID of the account.
+        event_uuid (str): The UUID of the event.
+        party_size (int): The new size of the party.
+        special_req (str, optional): The new special requests for the party.
+
+    Returns:
+        dict: The response from the Supabase database for the update operation.
+    """
+    # Check if the event is archived
+    event_check = supabase.table("events").select("archived").eq("uuid", event_uuid).execute()
+    if not event_check.data:
+        raise ValueError("Event not found for the given UUID.")
+    if event_check.data[0]["archived"]:
+        raise ValueError("Cannot edit a party for an archived event.")
+
+    # Check if a party exists for the given account_uuid and event_uuid
+    existing_party_response = supabase.table("party").select("uuid").eq("account_uuid", account_uuid).eq("event_uuid", event_uuid).execute()
+    if not existing_party_response.data or len(existing_party_response.data) == 0:
+        raise ValueError("Party not found for the given account_uuid and event_uuid.")
+
+    # Update the party entry
+    data = {
+        "party_size": party_size,
+        "special_req": special_req
+    }
+    update_response = supabase.table("party").update(data).eq("account_uuid", account_uuid).eq("event_uuid", event_uuid).execute()
+
+    # Delete existing attendance entries for the party
+    supabase.table("attendance").delete().eq("account_uuid", account_uuid).eq("event_uuid", event_uuid).execute()
+
+    # Fetch the name associated with the account_uuid
+    account_response = supabase.table("account").select("name").eq("uuid", account_uuid).execute()
+    if not account_response.data or len(account_response.data) == 0:
+        raise ValueError("Account not found for the given UUID.")
+
+    party_leader_name = account_response.data[0]["name"]
+
+    # Recreate attendance entries
+    create_attendance(True, account_uuid, event_uuid, party_leader_name, False)  # Use the fetched name for the party leader
+    for i in range(1, party_size):
+        create_attendance(False, account_uuid, event_uuid, f"Guest{i}", False)
+
+    return update_response
+
 def create_party_with_code(account_uuid, event_code, party_size, special_req=None):
     """
     Creates a party entry in the Supabase database and generates attendance entries for the party,
@@ -571,3 +621,6 @@ if __name__ == "__main__":
     """PARTY EXISTING OR NOT"""
     # print(does_party_exist("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "3f1ec332-d5ac-4cfb-b7a6-cc75abe889f4")) # there is a party so should be TRUE
     # print(does_party_exist("832f9b71-ddd1-4ef2-9f7a-8169e582f62b", "ff445652-ed9f-4e32-8230-6a0b35e405cc")) # no party so should be FALSE
+
+    """EDIT A PARTY THAT ALREADY EXISTS"""
+    edit_party("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "3f1ec332-d5ac-4cfb-b7a6-cc75abe889f4", 3, "seated near a window")
