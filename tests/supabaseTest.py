@@ -623,4 +623,4 @@ if __name__ == "__main__":
     # print(does_party_exist("832f9b71-ddd1-4ef2-9f7a-8169e582f62b", "ff445652-ed9f-4e32-8230-6a0b35e405cc")) # no party so should be FALSE
 
     """EDIT A PARTY THAT ALREADY EXISTS"""
-    edit_party("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "3f1ec332-d5ac-4cfb-b7a6-cc75abe889f4", 3, "seated near a window")
+    # edit_party("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "3f1ec332-d5ac-4cfb-b7a6-cc75abe889f4", 3, "seated near a window")
