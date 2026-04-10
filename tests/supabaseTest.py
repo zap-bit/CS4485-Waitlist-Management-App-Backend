@@ -551,6 +551,93 @@ def does_party_exist(account_uuid, event_uuid):
     # Return True if data exists, otherwise False
     return bool(party_response.data)
 
+def create_attendance_event(account_uuid, name, max_people, location, event_time):
+    """
+    Creates an ATTENDANCE type event in the EVENTS table on Supabase.
+
+    Parameters:
+        account_uuid (str): The UUID of the account creating the event.
+        name (str): The name of the event.
+        max_people (int): The maximum number of people allowed at the event.
+        location (str): The location of the event.
+        event_time (str): The timestamp of the event.
+
+    Returns:
+        dict: The response from the Supabase database for the event creation.
+    """
+    data = {
+        "account_uuid": account_uuid,
+        "name": name,
+        #"event_type": "ATTENDANCE",
+        "event_type": "CAPACITY",
+        "cap_type": "ATTENDANCE",
+        "location": location,
+        "event_time": event_time,
+        "max_people": max_people,
+        "current_people": 0,  # Default value for current_people
+        "archived": False  # Default value for archived
+    }
+    response = supabase.table("events").insert(data).execute()
+    return response
+
+def up_attendance_1(event_uuid):
+    """
+    Increments the current_people column by 1 for the given event_uuid,
+    ensuring it does not exceed max_people.
+    """
+    event_response = supabase.table("events").select("current_people", "max_people").eq("uuid", event_uuid).execute()
+    if not event_response.data or len(event_response.data) == 0:
+        raise ValueError("Event not found for the given UUID.")
+
+    current_people = event_response.data[0]["current_people"]
+    max_people = event_response.data[0]["max_people"]
+
+    new_people = min(current_people + 1, max_people)
+    supabase.table("events").update({"current_people": new_people}).eq("uuid", event_uuid).execute()
+
+def up_attendance_10(event_uuid):
+    """
+    Increments the current_people column by 10 for the given event_uuid,
+    ensuring it does not exceed max_people.
+    """
+    event_response = supabase.table("events").select("current_people", "max_people").eq("uuid", event_uuid).execute()
+    if not event_response.data or len(event_response.data) == 0:
+        raise ValueError("Event not found for the given UUID.")
+
+    current_people = event_response.data[0]["current_people"]
+    max_people = event_response.data[0]["max_people"]
+
+    new_people = min(current_people + 10, max_people)
+    supabase.table("events").update({"current_people": new_people}).eq("uuid", event_uuid).execute()
+
+def down_attendance_1(event_uuid):
+    """
+    Decrements the current_people column by 1 for the given event_uuid,
+    ensuring it does not go below 0.
+    """
+    event_response = supabase.table("events").select("current_people").eq("uuid", event_uuid).execute()
+    if not event_response.data or len(event_response.data) == 0:
+        raise ValueError("Event not found for the given UUID.")
+
+    current_people = event_response.data[0]["current_people"]
+
+    new_people = max(current_people - 1, 0)
+    supabase.table("events").update({"current_people": new_people}).eq("uuid", event_uuid).execute()
+
+def down_attendance_10(event_uuid):
+    """
+    Decrements the current_people column by 10 for the given event_uuid,
+    ensuring it does not go below 0.
+    """
+    event_response = supabase.table("events").select("current_people").eq("uuid", event_uuid).execute()
+    if not event_response.data or len(event_response.data) == 0:
+        raise ValueError("Event not found for the given UUID.")
+
+    current_people = event_response.data[0]["current_people"]
+
+    new_people = max(current_people - 10, 0)
+    supabase.table("events").update({"current_people": new_people}).eq("uuid", event_uuid).execute()
+
 # Example usage
 if __name__ == "__main__":
     
@@ -624,3 +711,12 @@ if __name__ == "__main__":
 
     """EDIT A PARTY THAT ALREADY EXISTS"""
     # edit_party("dbe6ea8a-3ac5-454b-ad2d-baf4c971f68e", "3f1ec332-d5ac-4cfb-b7a6-cc75abe889f4", 3, "seated near a window")
+
+    """CREATE ATTENDANCE EVENT"""
+    # create_attendance_event("eb30833a-45e7-4fa8-9f82-24aa2a292f49", "attdnce test", 150, "open room", "2027-03-28T15:00:00Z")
+
+    """CHECK ATTENDANCE CHANGES"""
+    # up_attendance_1("3134d2da-0eb9-4856-8912-79731f2d014b")
+    # up_attendance_10("3134d2da-0eb9-4856-8912-79731f2d014b")
+    # down_attendance_1("c539b519-ac81-4691-9816-26c271c8cec0")
+    # down_attendance_10("fdbf88a2-bd04-4d0c-8678-0dfafe398d15")
