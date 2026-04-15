@@ -14,12 +14,6 @@ Discussion Summary
 - Scaling
 - Load balancing
 - Testing
+- Setting table event to max capacity and then removing table in staff dashboard results in issue
 - Focuses for next week
 
-- What is Product
-- How is it useful
-- K6 for load testing
-- toggle offline mode problems?
-- phone number check
-- member since invalid date
-- 0 member capacity 
