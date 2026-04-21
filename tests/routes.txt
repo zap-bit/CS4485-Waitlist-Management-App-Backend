@@ -1,0 +1,32 @@
+### Routes in `auth.ts`
+- `POST /login`
+- `POST /signup/user`
+- `POST /signup/business`
+- `POST /refresh`
+- `POST /logout`
+- `GET /me`
+- `GET /me/waitlist`
+
+### Routes in `events.ts`
+- `GET /`
+- `GET /:eventId`
+- `POST /`
+- `PATCH /:eventId`
+- `DELETE /:eventId`
+- `PUT /:eventId/queues`
+- `PUT /:eventId/tables/:tableId`
+
+### Routes in `sync.ts`
+- `POST /`
+
+### Routes in `waitlist.ts`
+- `GET /`
+- `POST /`
+- `GET /:entryId`
+- `DELETE /:entryId`
+
+### Routes in `staff.ts`
+- `GET /dashboard`
+- `POST /promote`
+- `POST /seat`
+- `POST /clear-table`
